@@ -41,8 +41,150 @@ void delete_rbtree(rbtree *t) {
   free(t);
 }
 
+void left_rotate(rbtree *t, node_t *pivot) {
+  node_t *right_child = pivot->right;
+
+  pivot->right = right_child->left;
+  if (right_child->left != t->nil) {
+    right_child->left->parent = pivot;
+  }
+
+  right_child->parent = pivot->parent;
+
+  if (pivot->parent == t->nil) {
+    t->root = right_child;
+  } else if (pivot == pivot->parent->left) {
+    pivot->parent->left = right_child;
+  } else {
+    pivot->parent->right = right_child;
+  }
+
+  right_child->left = pivot;
+  pivot->parent = right_child;
+}
+
+void right_rotate(rbtree *t, node_t *pivot) {
+  node_t *left_child = pivot->left;
+
+  // pivot의 왼쪽 서브트리를 left_child의 오른쪽 서브트리로 바꿈
+  pivot->left = left_child->right;
+  if (left_child->right != t->nil) {
+    left_child->right->parent = pivot;
+  }
+  
+  // left_child의 부모를 pivot의 부모로 변경
+  left_child->parent = pivot->parent; 
+
+  // pivot이 루트였다면 트리의 루트 갱신
+  if (pivot->parent == t->nil) {
+    t->root = left_child;
+  } else if (pivot == pivot->parent->left) {
+    pivot->parent->left = left_child;
+  } else {
+    pivot->parent->right = left_child;
+  }
+
+  // left_child의 오른쪽 자식을 pivot으로
+  left_child->right = pivot;
+  pivot->parent = left_child;
+}
+
+void insert_fixup(rbtree *t, node_t *current) {
+  while (current->parent->color == RBTREE_RED) {
+    node_t *parent = current->parent;
+    node_t *grandparent = parent->parent;
+
+    // 부모가 할아버지의 왼쪽 자식일 경우
+    if (parent == grandparent->left) {
+      node_t *uncle = grandparent->right;
+      
+      // Case 1: 부모와 삼촌이 RED
+      if (uncle->color == RBTREE_RED) {
+        // 부모/삼촌 모두 BLACK으로 바꾸고, 할아버지를 RED로 변경
+        parent->color = RBTREE_BLACK;
+        uncle->color = RBTREE_BLACK;
+        grandparent->color = RBTREE_RED;
+
+        // 할아버지에서 다시 시작
+        current = grandparent;
+      }
+      // Case 2/3: 삼촌이 BLACK
+      else {
+        // Case 2: 꺾인 상태 (current가 오른쪽 자식)
+        if (current == parent->right) {
+          current = parent;
+          // 왼쪽으로 회전
+          left_rotate(t, current);
+        }
+
+        // Case 3: 일직선
+        parent->color = RBTREE_BLACK;
+        grandparent->color = RBTREE_RED;
+        // 오른쪽으로 회전
+        right_rotate(t, grandparent);
+      }
+    }
+    // 부모가 할아버지의 오른쪽 자식일 경우
+    else {
+      node_t *uncle = grandparent->left;
+
+      // Case 1: 부모와 삼촌이 RED
+      if (uncle->color == RBTREE_RED) {
+        parent->color = RBTREE_BLACK;
+        uncle->color = RBTREE_BLACK;
+        grandparent->color = RBTREE_RED;
+
+        current = grandparent;
+      }
+      // Case 2/3: 삼촌이 BLACK
+      else {
+        // Case 2: 꺾인 상태 (current가 왼쪽 자식)
+        if (current == parent->left) {
+          current = parent;
+          right_rotate(t, current);
+        }
+
+        // Case 3: 일직선
+        parent->color = RBTREE_BLACK;
+        grandparent->color = RBTREE_RED;
+        left_rotate(t, grandparent);
+      }
+    }
+  }
+}
+
 node_t *rbtree_insert(rbtree *t, const key_t key) {
-  // TODO: implement insert
+  node_t *current = t->root;
+  node_t *parent = t->nil;
+
+  while (current != t->nil) {
+    parent = current;
+    if (key < current->key) {
+      current = current->left;
+    } else {
+      current = current->right;
+    }
+  }
+
+  node_t *new_node = calloc(1, sizeof(node_t));
+  new_node->key = key;
+  new_node->color = RBTREE_RED;
+  new_node->left = t->nil;
+  new_node->right = t->nil;
+  new_node->parent = parent;
+
+  // 트리가 비어 있는 경우,
+  if (parent == t->nil) {
+    // new_node를 트리의 루트로 지정
+    t->root = new_node;
+  } else if (key < parent->key) {
+    parent->left = new_node;
+  } else {
+  parent->right = new_node;
+  }
+
+  insert_fixup(t, new_node);
+  
   return t->root;
 }
 

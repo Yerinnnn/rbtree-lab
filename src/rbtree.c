@@ -13,10 +13,10 @@ rbtree *new_rbtree(void) {
   // nil_node->left = nil_node->right = nil_node->parent = NULL;  // 명시적으로 적어주는 게 좋을까, 아닐까?
 
   // 성종 오빠가 추가한 부분
-  nil_node->key = 0;  // 오빠는 malloc을 사용했고, 그럴 때는 이 멤버를 사용하지 않아도 꼭 초기화 해주는 편임 (malloc 할 때는 모든 멤버를 꼭 초기화 해주는 게 좋음 -> 어떤 에러가 발생할지 모르니까)
-  nil_node->left = nil_node;
-  nil_node->right = nil_node;
-  nil_node->parent = nil_node;
+  // nil_node->key = 0;  // 오빠는 malloc을 사용했고, 그럴 때는 이 멤버를 사용하지 않아도 꼭 초기화 해주는 편임 (malloc 할 때는 모든 멤버를 꼭 초기화 해주는 게 좋음 -> 어떤 에러가 발생할지 모르니까)
+  // nil_node->left = nil_node;
+  // nil_node->right = nil_node;
+  // nil_node->parent = nil_node;
 
   // 트리 설정
   p->nil = nil_node;
@@ -25,8 +25,19 @@ rbtree *new_rbtree(void) {
   return p;
 }
 
+void delete_node(rbtree *t, node_t *n) {
+  if (n == t->nil) return;
+  
+  delete_node(t, n->left);     // 왼쪽 서브트리 제거
+  delete_node(t, n->right);    // 오른쪽 서브트리 제거
+  free(n);
+}
+
 void delete_rbtree(rbtree *t) {
   // TODO: reclaim the tree nodes's memory
+  if (!t) return;
+  delete_node(t, t->root);
+  free(t->nil);
   free(t);
 }
 
